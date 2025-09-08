@@ -1,0 +1,85 @@
+import { db, todayStr, now } from './db.js';
+},
+{
+id: 'five_listings',
+key: 'five_listings',
+name: '판매 준비 완료 (5개 등록)',
+description: '판매글 5개를 등록했어요.',
+points: 15,
+icon: '🖐️',
+category: 'Listing',
+check: (s) => s.listings >= 5 || { progress: s.listings, target: 5 },
+},
+{
+id: 'first_sale',
+key: 'first_sale',
+name: '첫 판매 성공',
+description: '첫 거래를 성공했어요.',
+points: 25,
+icon: '💸',
+category: 'Sales',
+check: (s) => s.sales >= 1 || { progress: s.sales, target: 1 },
+},
+{
+id: 'five_sales',
+key: 'five_sales',
+name: '거래 달인 (5회)',
+description: '거래를 5번 성사시켰어요.',
+points: 50,
+icon: '🥇',
+category: 'Sales',
+check: (s) => s.sales >= 5 || { progress: s.sales, target: 5 },
+},
+{
+id: 'ten_chats',
+key: 'ten_chats',
+name: '소통왕 (10회 채팅)',
+description: '10번의 채팅을 시작했어요.',
+points: 15,
+icon: '💬',
+category: 'Social',
+check: (s) => s.chats >= 10 || { progress: s.chats, target: 10 },
+},
+{
+id: 'profile_complete',
+key: 'profile_complete',
+name: '프로필 100% 완료',
+description: '프로필 정보를 모두 채웠어요.',
+points: 10,
+icon: '🧑\u200d💼',
+category: 'Onboarding',
+check: (s) => s.profile_completed >= 1 || { progress: s.profile_completed, target: 1 },
+},
+{
+id: 'login_streak_3',
+key: 'login_streak_3',
+name: '3일 연속 접속',
+description: '3일 연속으로 접속했어요.',
+points: 20,
+icon: '🔥',
+category: 'Streak',
+check: (s) => s.login_streak >= 3 || { progress: s.login_streak, target: 3 },
+},
+{
+id: 'login_streak_7',
+key: 'login_streak_7',
+name: '7일 연속 접속',
+description: '7일 연속으로 접속했어요.',
+points: 40,
+icon: '⚡',
+category: 'Streak',
+check: (s) => s.login_streak >= 7 || { progress: s.login_streak, target: 7 },
+},
+];
+
+
+// Seed achievements table if not present
+export function seedAchievements() {
+const insert = db.prepare(`INSERT OR IGNORE INTO achievements (id, key, name, description, points, icon, category, secret) VALUES (@id, @key, @name, @description, @points, @icon, @category, @secret)`);
+const tx = db.transaction(() => {
+for (const r of RULES) {
+insert.run({ ...r, secret: r.secret ? 1 : 0 });
+}
+});
+tx();
+}

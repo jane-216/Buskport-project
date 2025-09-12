@@ -1,0 +1,244 @@
+{
+"name": "video-uploader",
+"version": "1.0.0",
+"type": "module",
+"scripts": {
+"dev": "node server.js"
+},
+"dependencies": {
+"better-sqlite3": "^9.6.0",
+"dotenv": "^16.4.5",
+"ejs": "^3.1.9",
+"express": "^4.19.2",
+"helmet": "^7.1.0",
+"mime-types": "^2.1.35",
+"multer": "^1.4.5-lts.1"
+}
+}
+
+
+// db.js
+import Database from 'better-sqlite3';
+
+
+const db = new Database('app.db');
+
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS users (
+id INTEGER PRIMARY KEY,
+name TEXT NOT NULL
+);
+
+
+
+CREATE TABLE IF NOT EXISTS videos (
+id INTEGER PRIMARY KEY,
+user_id INTEGER NOT NULL,
+original_name TEXT NOT NULL,
+stored_path TEXT NOT NULL,
+mime TEXT NOT NULL,
+size_bytes INTEGER NOT NULL,
+created_at TEXT NOT NULL,
+FOREIGN KEY (user_id) REFERENCES users(id)
+);
+`);
+
+
+// seed a mock user if not exists
+const getUser = db.prepare('SELECT * FROM users WHERE id = 1');
+if (!getUser.get()) {
+db.prepare('INSERT INTO users (id, name) VALUES (1, ?)').run('Demo User');
+}
+
+
+export default db;
+
+
+// server.js
+}
+cb(null, true);
+}
+
+
+const upload = multer({ storage, fileFilter, limits: { fileSize: MAX_BYTES } });
+
+
+// DB statements
+const insertVideo = db.prepare(`
+INSERT INTO videos (user_id, original_name, stored_path, mime, size_bytes, created_at)
+VALUES (@user_id, @original_name, @stored_path, @mime, @size_bytes, @created_at)
+`);
+const listVideos = db.prepare(`
+SELECT * FROM videos WHERE user_id = ? ORDER BY id DESC
+`);
+const findVideo = db.prepare('SELECT * FROM videos WHERE id = ? AND user_id = ?');
+const deleteVideoStmt = db.prepare('DELETE FROM videos WHERE id = ? AND user_id = ?');
+
+
+// Routes
+app.get('/', (req, res) => res.redirect('/profile'));
+
+
+app.get('/profile', (req, res) => {
+const videos = listVideos.all(req.user.id);
+res.render('profile', {
+user: req.user,
+videos,
+maxMB: Math.round(MAX_BYTES / (1024 * 1024))
+});
+});
+
+
+app.post('/upload', upload.single('video'), (req, res, next) => {
+try {
+const file = req.file;
+if (!file) throw new Error('No file received');
+
+
+const relPath = path.relative(process.cwd(), file.path).replaceAll('\\', '/');
+insertVideo.run({
+user_id: req.user.id,
+original_name: req.body.originalName || file.originalname,
+stored_path: '/' + relPath,
+mime: file.mimetype,
+size_bytes: file.size,
+created_at: new Date().toISOString()
+});
+
+
+return res.redirect('/profile');
+} catch (err) {
+next(err);
+}
+});
+
+
+app.post('/videos/:id/delete', (req, res, next) => {
+try {
+const v = findVideo.get(Number(req.params.id), req.user.id);
+if (!v) return res.status(404).send('Not found');
+
+
+// remove file on disk
+const fullPath = path.join(process.cwd(), v.stored_path.replace(/^\//, ''));
+if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+
+
+deleteVideoStmt.run(v.id, req.user.id);
+res.redirect('/profile');
+} catch (err) {
+next(err);
+}
+});
+
+
+// Basic error handler
+app.use((err, _req, res, _next) => {
+const msg = err?.message || 'Upload error';
+res.status(400).send(`Error: ${msg}`);
+});
+
+
+app.listen(PORT, () => console.log(`\n▶ Server running on http://localhost:${PORT}`));
+
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Profile – <%= user.name %></title>
+<link rel="stylesheet" href="/public/styles.css" />
+</head>
+<body>
+<main class="container">
+<header>
+<h1>Welcome, <%= user.name %></h1>
+<p>Upload a video (max <%= maxMB %> MB). Allowed: mp4, webm, ogg, mov</p>
+</header>
+
+
+<section class="card">
+<form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+<label class="field">
+<span>Choose a video</span>
+<input type="file" name="video" id="videoInput" accept="video/*" required />
+</label>
+<label class="field">
+<span>Title (optional)</span>
+<input type="text" name="originalName" placeholder="My vacation clip" />
+</label>
+<div id="preview"></div>
+<button type="submit">Upload</button>
+</form>
+</section>
+
+
+<section>
+<h2>Your Videos</h2>
+<div class="grid">
+<% if (videos.length === 0) { %>
+<p>No videos yet. Upload one above!</p>
+<% } %>
+<% videos.forEach(v => { %>
+<article class="card">
+<h3><%= v.original_name %></h3>
+<video controls preload="metadata" src="<%= v.stored_path %>" style="width:100%;height:auto;border-radius:12px;"></video>
+<p class="meta">
+<small><%= (v.size_bytes/1024/1024).toFixed(1) %> MB · <%= new Date(v.created_at).toLocaleString() %></small>
+</p>
+<form action="/videos/<%= v.id %>/delete" method="post" onsubmit="return confirm('Delete this video?');">
+<button class="ghost" type="submit">Delete</button>
+</form>
+</article>
+<% }) %>
+</div>
+</section>
+</main>
+
+
+<script src="/public/script.js"></script>
+</body>
+</html>
+
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; margin: 0; color: #111; background: #fafafa; }
+.container { max-width: 960px; margin: 32px auto; padding: 0 16px; }
+header h1 { margin: 0 0 8px; }
+.card { background: #fff; padding: 16px; border: 1px solid #eee; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.04); margin-bottom: 16px; }
+.field { display: grid; gap: 6px; margin-bottom: 12px; }
+input[type="text"], input[type="file"] { padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
+button { padding: 10px 14px; border-radius: 10px; border: 1px solid #111; background: #111; color: #fff; cursor: pointer; }
+button.ghost { background: transparent; color: #111; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.meta { color: #555; }
+#preview { margin: 8px 0; }
+#preview video { width: 100%; border-radius: 12px; }
+
+
+
+// public/script.js
+const input = document.getElementById('videoInput');
+const preview = document.getElementById('preview');
+
+
+if (input) {
+input.addEventListener('change', () => {
+preview.innerHTML = '';
+const file = input.files?.[0];
+if (!file) return;
+const url = URL.createObjectURL(file);
+const v = document.createElement('video');
+v.controls = true;
+v.src = url;
+v.style.maxHeight = '280px';
+preview.appendChild(v);
+});
+}
+
+
+# 1) Create folder & files per the tree above, then:
+npm install
+npm run dev
+# open http://localhost:3000

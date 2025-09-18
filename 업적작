@@ -1,85 +1,172 @@
-import { db, todayStr, now } from './db.js';
-},
-{
-id: 'five_listings',
-key: 'five_listings',
-name: '판매 준비 (등록)',
-description: '판매글을 등록했어요.',
-points: 15,
-icon: '🖐️',
-category: 'Listing',
-check: (s) => s.listings >= 5 || { progress: s.listings, target: 5 },
-},
-{
-id: 'first_sale',
-key: 'first_sale',
-name: '첫 판매',
-description: '처음 거래를 성공했어요.',
-points: 25,
-icon: '💸',
-category: 'Sales',
-check: (s) => s.sales >= 1 || { progress: s.sales, target: 1 },
-},
-{
-id: 'five_sales',
-key: 'five_sales',
-name: '거래 장인 (5회)',
-description: '5회 거래를 했어요.',
-points: 50,
-icon: '🥇',
-category: 'Sales',
-check: (s) => s.sales >= 5 || { progress: s.sales, target: 5 },
-},
-{
-id: 'ten_chats',
-key: 'ten_chats',
-name: '소통왕 (100회 채팅)',
-description: '100번의 채팅을 시작했어요.',
-points: 15,
-icon: '💬',
-category: 'Social',
-check: (s) => s.chats >= 10 || { progress: s.chats, target: 10 },
-},
-{
-id: 'profile_complete',
-key: 'profile_complete',
-name: '프로필 100% 완료',
-description: '프로필 정보를 모두 채웠어요.',
-points: 10,
-icon: '🧑\u200d💼',
-category: 'Onboarding',
-check: (s) => s.profile_completed >= 1 || { progress: s.profile_completed, target: 1 },
-},
-{
-id: 'login_streak_3',
-key: 'login_streak_3',
-name: '3일 연속 접속',
-description: '3일 연속으로 접속했어요.',
-points: 20,
-icon: '🔥',
-category: 'Streak',
-check: (s) => s.login_streak >= 3 || { progress: s.login_streak, target: 3 },
-},
-{
-id: 'login_streak_7',
-key: 'login_streak_7',
-name: '7일 연속 접속',
-description: '7일 연속으로 접속했어요.',
-points: 40,
-icon: '⚡',
-category: 'Streak',
-check: (s) => s.login_streak >= 7 || { progress: s.login_streak, target: 7 },
-},
+import { db } from './db.js';
+
+/** @typedef {{
+ *  id: string;
+ *  key?: string;
+ *  name: string;
+ *  description: string;
+ *  points: number;
+ *  icon: string;
+ *  category: 'Listing'|'Sales'|'Social'|'Onboarding'|'Streak'|string;
+ *  secret?: boolean;
+ *  metric: string;
+ *  threshold: number;
+ *  check: (s: Record<string, number>) => true | {progress:number, target:number};
+ * }} AchievementRule */
+
+/** 공통 check 생성기 */
+function makeCheck(metric, threshold) {
+  return (s) => (Number(s?.[metric] ?? 0) >= threshold)
+    ? true
+    : { progress: Number(s?.[metric] ?? 0), target: threshold };
+}
+
+/** rule 생성 헬퍼 (DRY) */
+function makeRule({
+  id, name, description, points, icon, category, metric, threshold, secret = false, key,
+}) {
+  return {
+    id,
+    key: key ?? id, // id와 동일하면 key 생략 가능
+    name,
+    description,
+    points,
+    icon,
+    category,
+    secret,
+    metric,
+    threshold,
+    check: makeCheck(metric, threshold),
+  };
+}
+
+/** 규칙 정의 */
+export const RULES = [
+  makeRule({
+    id: 'five_listings',
+    name: '판매 준비 (등록)',
+    description: '판매글을 등록했어요.',
+    points: 15,
+    icon: '🖐️',
+    category: 'Listing',
+    metric: 'listings',
+    threshold: 5,
+  }),
+  makeRule({
+    id: 'first_sale',
+    name: '첫 판매',
+    description: '처음 거래를 성공했어요.',
+    points: 25,
+    icon: '💸',
+    category: 'Sales',
+    metric: 'sales',
+    threshold: 1,
+  }),
+  makeRule({
+    id: 'five_sales',
+    name: '거래 장인 (5회)',
+    description: '5회 거래를 했어요.',
+    points: 50,
+    icon: '🥇',
+    category: 'Sales',
+    metric: 'sales',
+    threshold: 5,
+  }),
+  makeRule({
+    id: 'ten_chats',
+    name: '소통왕 (10회 채팅)',
+    description: '10번의 채팅을 시작했어요.',
+    points: 15,
+    icon: '💬',
+    category: 'Social',
+    metric: 'chats',
+    threshold: 10,
+  }),
+  makeRule({
+    id: 'profile_complete',
+    name: '프로필 100% 완료',
+    description: '프로필 정보를 모두 채웠어요.',
+    points: 10,
+    icon: '🧑‍💼',
+    category: 'Onboarding',
+    metric: 'profile_completed',
+    threshold: 1,
+  }),
+  makeRule({
+    id: 'login_streak_3',
+    name: '3일 연속 접속',
+    description: '3일 연속으로 접속했어요.',
+    points: 20,
+    icon: '🔥',
+    category: 'Streak',
+    metric: 'login_streak',
+    threshold: 3,
+  }),
+  makeRule({
+    id: 'login_streak_7',
+    name: '7일 연속 접속',
+    description: '7일 연속으로 접속했어요.',
+    points: 40,
+    icon: '⚡',
+    category: 'Streak',
+    metric: 'login_streak',
+    threshold: 7,
+  }),
 ];
 
+/** 메타(뷰용)만 DB에 넣습니다. check/metric/threshold는 런타임에서 사용 */
+const UPSERT_SQL = `
+INSERT INTO achievements (id, key, name, description, points, icon, category, secret)
+VALUES (@id, @key, @name, @description, @points, @icon, @category, @secret)
+ON CONFLICT(id) DO UPDATE SET
+  key=excluded.key,
+  name=excluded.name,
+  description=excluded.description,
+  points=excluded.points,
+  icon=excluded.icon,
+  category=excluded.category,
+  secret=excluded.secret
+`;
 
-// Seed achievements table if not present
-export function seedAchievements() {
-const insert = db.prepare(`INSERT OR IGNORE INTO achievements (id, key, name, description, points, icon, category, secret) VALUES (@id, @key, @name, @description, @points, @icon, @category, @secret)`);
-const tx = db.transaction(() => {
-for (const r of RULES) {
-insert.run({ ...r, secret: r.secret ? 1 : 0 });
+/** 인덱스 최적화: 최초 한 번만 생성(있으면 무시) */
+function ensureIndexes() {
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_achievements_key ON achievements(key);
+    CREATE INDEX IF NOT EXISTS idx_achievements_category ON achievements(category);
+  `);
 }
-});
-tx();
+
+/** Seed achievements (UPSERT + 트랜잭션 + 프리페어드) */
+export function seedAchievements() {
+  ensureIndexes();
+  const stmt = db.prepare(UPSERT_SQL);
+  const asRow = (r) => ({
+    id: r.id,
+    key: r.key ?? r.id,
+    name: r.name,
+    description: r.description,
+    points: r.points,
+    icon: r.icon,
+    category: r.category,
+    secret: r.secret ? 1 : 0,
+  });
+  const tx = db.transaction((rows) => {
+    for (const r of rows) stmt.run(asRow(r));
+  });
+  tx(RULES);
+}
+
+/** 유틸: 현재 상태에서 달성/진행도 계산 */
+export function evaluateAll(state) {
+  const unlocked = [];
+  const inProgress = [];
+  for (const r of RULES) {
+    const res = r.check(state);
+    if (res === true) {
+      unlocked.push({ id: r.id, points: r.points });
+    } else {
+      inProgress.push({ id: r.id, ...res, points: r.points });
+    }
+  }
+  return { unlocked, inProgress };
 }

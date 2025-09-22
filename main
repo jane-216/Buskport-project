@@ -1,3 +1,41 @@
+spring:
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
+
+package com.example.mywebsite.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
+import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
+
+import java.util.Locale;
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    // 브라우저 Accept-Language를 따르고, 기본을 한국어로.
+    public LocaleResolver localeResolver() {
+        AcceptHeaderLocaleResolver resolver = new AcceptHeaderLocaleResolver();
+        resolver.setDefaultLocale(Locale.KOREAN);
+        return resolver;
+    }
+
+
+@Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        LocaleChangeInterceptor lci = new LocaleChangeInterceptor();
+        lci.setParamName("lang");
+        registry.addInterceptor(lci);
+    }
+}
+
+
 package com.example.mywebsite.service;
 
 import org.springframework.context.MessageSource;
@@ -13,12 +51,15 @@ public class MessageService {
         this.messageSource = messageSource;
     }
 
+    public String get(String code, Object... args) {
+        return messageSource.getMessage(code, args, LocaleContextHolder.getLocale());
+    }
+
+    // 홈 전용 쇼트컷 (필요 시)
     public String getHomeMessage() {
-        // messages.properties에 정의된 home.message를 현재 로케일로 가져옵니다.
-        return messageSource.getMessage("home.message", null, LocaleContextHolder.getLocale());
+        return get("home.message");
     }
 }
-
 
 
 package com.example.mywebsite.controller;
@@ -31,74 +72,47 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class HomeController {
 
-    private final MessageService messageService;
+    private final MessageService messages;
 
-    public HomeController(MessageService messageService) {
-        this.messageService = messageService;
+    public HomeController(MessageService messages) {
+        this.messages = messages;
     }
 
     @GetMapping("/")
     public String index(Model model) {
-        model.addAttribute("message", messageService.getHomeMessage());
+        model.addAttribute("message", messages.getHomeMessage());
         return "home/index"; // templates/home/index.html
     }
 }
 
 
-#이거 근데 웹사이트 만들어야 하는데 어제 만들지 흠
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title th:text="#{site.title}">My Website</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}" />
+</head>
+<body>
+  <main>
+    <h1 th:text="${message}">홈 메시지</h1>
 
-업데이트 버전
+    <p>
+      <a th:href="@{/?lang=ko}">한국어</a> |
+      <a th:href="@{/?lang=en}">English</a>
+    </p>
+  </main>
+  <script th:src="@{/js/main.js}"></script>
+</body>
+</html>
 
-mywebsite/
- ├─ src/main/java/com/example/mywebsite/
- │    ├─ controller/
- │    │    └─ HomeController.java
- │    ├─ service/
- │    │    └─ MessageService.java
- │    └─ MyWebsiteApplication.java
- ├─ src/main/resources/
- │    ├─ templates/
- │    │    └─ home/
- │    │         └─ index.html
- │    ├─ static/
- │    │    ├─ css/
- │    │    └─ js/
- │    └─ messages.properties
- └─ pom.xml
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" 
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
-         http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+site.title=내 웹사이트
+home.message=안녕하세요!
 
-    <groupId>com.example</groupId>
-    <artifactId>mywebsite</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+site.title=My Website
+home.message=Hello! This is the home page with i18n enabled.
 
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.0</version>
-    </parent>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-thymeleaf</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-</project>
 
 package com.example.mywebsite;
 
@@ -109,44 +123,5 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class MyWebsiteApplication {
     public static void main(String[] args) {
         SpringApplication.run(MyWebsiteApplication.class, args);
-    }
-}
-
-package com.example.mywebsite.service;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-@Service
-public class MessageService {
-
-    @Value("${home.message}")
-    private String homeMessage;
-
-    public String getHomeMessage() {
-        return homeMessage;
-    }
-}
-
-package com.example.mywebsite.controller;
-
-import com.example.mywebsite.service.MessageService;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-
-@Controller
-public class HomeController {
-
-    private final MessageService messageService;
-
-    public HomeController(MessageService messageService) {
-        this.messageService = messageService;
-    }
-
-    @GetMapping("/")
-    public String index(Model model) {
-        model.addAttribute("message", messageService.getHomeMessage());
-        return "home/index"; // templates/home/index.html
     }
 }

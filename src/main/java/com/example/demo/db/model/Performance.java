@@ -41,6 +41,4 @@ public class Performance {
 
     @OneToMany(mappedBy = "performance")
     private List<PerformanceParticipant> participants;
-
-    // Getter, Setter 생략...
 }

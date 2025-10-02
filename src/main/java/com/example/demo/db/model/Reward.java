@@ -13,11 +13,12 @@ public class Reward {
     @Column(name = "reward_id")
     private Integer rewardId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name="reward_name")
     private String rewardName;
 
     @Column(nullable = false)
     private String description;
 
+    @Column(name="icon_image_url")
     private String iconImageUrl;
 }

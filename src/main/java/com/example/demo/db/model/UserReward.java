@@ -5,6 +5,8 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 @Entity
 @Table(name = "user_rewards")
 @Data
@@ -23,5 +25,7 @@ public class UserReward {
     @JoinColumn(name = "reward_id", nullable = false)
     private Reward reward;
 
+    @CreationTimestamp
+    @Column(name="earned_at", updatable = false, insertable = false)
     private LocalDateTime earnedAt;
 }

@@ -28,7 +28,7 @@ public class RewardController {
 		return ResponseEntity.ok(result);
 	}
 	
-	@PostMapping("/")
+	@PostMapping("")
 	ResponseEntity<?> addReward(@RequestBody RewardDto dto) {
 		rewardService.addReward(dto);
 		return ResponseEntity.ok(null);

@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +28,12 @@ public class UserController {
 	public ResponseEntity<?> getUsers(@PathVariable long userId) {
 		User result = userService.getUser(userId);
 		return ResponseEntity.ok(result);
+	}
+	
+	@DeleteMapping("/{userId}")
+	public ResponseEntity<?> deleteUser(@PathVariable long userId) {
+		userService.deleteUser(userId);
+		return ResponseEntity.noContent().build();
 	}
 	
 	@PostMapping()

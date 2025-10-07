@@ -14,7 +14,11 @@ import com.example.demo.db.model.User;
 import com.example.demo.model.PerformanceDto;
 import com.example.demo.model.PerformanceParticipantDto;
 
+import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class PerformanceService {
 	@Autowired
 	private PerformanceRepository performanceRepository;
@@ -41,6 +45,27 @@ public class PerformanceService {
 	public void addPerformance(PerformanceDto performance) {
 		Performance entity = fromDto(performance);
 		performanceRepository.save(entity);
+	}
+	
+	@Transactional
+	public void updatePerformance(PerformanceDto performance) {
+		Performance originEntity = performanceRepository.findById(performance.getPerformanceId()).orElse(null);
+		if (originEntity == null) {
+			log.error("NOT EXIST PERFORMANCE");
+			return;
+		}
+		
+		originEntity.setTitle(performance.getTitle());
+		originEntity.setChatUrl(performance.getChatUrl());
+		originEntity.setSongList(performance.getSongList());
+		originEntity.setPerformanceDatetime(performance.getPerformanceDatetime());
+		originEntity.setPromoUrl(performance.getPromoUrl());
+	}
+	
+	@Transactional
+	public void deletePerformance(Long performanceId) {
+		performanceParticipantRepository.deleteByPerformance_PerformanceId(performanceId);
+		performanceRepository.deleteById(performanceId);
 	}
 	
 	public void addParticipants(List<PerformanceParticipantDto> dtoes) {

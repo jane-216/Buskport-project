@@ -13,4 +13,9 @@ public interface PerformanceParticipantRepository extends JpaRepository<Performa
      * performanceId를 기준으로 해당 공연의 모든 참여자 목록을 조회합니다.
      */
     List<PerformanceParticipant> findByPerformance_PerformanceId(Long performanceId);
+    
+    /**
+     * performanceId를 기준으로 해당 공연의 모든 참여자 목록을 삭제합니다.
+     */
+    long deleteByPerformance_PerformanceId(Long performanceId);
 }

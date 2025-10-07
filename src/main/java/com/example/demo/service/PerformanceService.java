@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,11 @@ public class PerformanceService {
 		List<PerformanceParticipantDto> participiantDtos = participiants.stream().map(entity -> toDto(entity)).toList();
 		dto.setParticipants(participiantDtos);
 		return dto;
+	}
+	
+	public List<PerformanceDto> getPerformances(LocalDate startDate, LocalDate endDate) {
+		List<Performance> performances = performanceRepository.findByPerformanceDate(startDate, endDate);
+		return performances.stream().map(p -> toDto(p)).toList();
 	}
 	
 	public void addPerformance(PerformanceDto performance) {

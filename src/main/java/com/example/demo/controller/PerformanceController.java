@@ -1,5 +1,7 @@
 package com.example.demo.controller;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.model.PerformanceDto;
@@ -23,6 +26,12 @@ import com.example.demo.service.PerformanceService;
 public class PerformanceController {
 	@Autowired
 	private PerformanceService performanceService;
+	
+	@GetMapping("")
+	ResponseEntity<?> getPerformances(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate) {
+		List<PerformanceDto> performances = performanceService.getPerformances(startDate, endDate);
+		return ResponseEntity.ok(performances);
+	}
 	
 	@GetMapping("/{performanceId}")
 	ResponseEntity<?> getPerformance(@PathVariable long performanceId) {

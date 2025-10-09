@@ -14,6 +14,8 @@ import com.example.demo.db.model.UserReward;
 import com.example.demo.model.RewardDto;
 import com.example.demo.model.UserRewardDto;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class RewardService {
 	@Autowired
@@ -35,12 +37,19 @@ public class RewardService {
 	}
 	
 	public List<UserRewardDto> getUserRewards(long userId) {
-		List<UserReward> entities = userRewardRepository.findByUser_Id(userId);
+		List<UserReward> entities = userRewardRepository.findByUser_User_Id(userId);
 		return entities.stream().map(entity -> toDto(entity)).toList();
 	}
 	
 	public void addUserReward(UserRewardDto dto) {
 		userRewardRepository.save(fromDto(dto));
+	}
+	
+	@Transactional
+	public void deleteReward(int rewardId) {
+		// user가 획득한 reward부터 삭제한다.
+		userRewardRepository.deleteByReward_Reward_Id(rewardId);
+		rewardRepository.deleteById(rewardId);
 	}
 	
 	private RewardDto toDto(Reward entity) {

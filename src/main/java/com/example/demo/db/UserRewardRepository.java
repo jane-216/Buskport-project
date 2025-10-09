@@ -9,5 +9,6 @@ import com.example.demo.db.model.UserReward;
 
 @Repository
 public interface UserRewardRepository extends JpaRepository<UserReward, Long> {
-	List<UserReward> findByUser_Id(Long userId);
+	List<UserReward> findByUser_User_Id(Long userId);
+	int deleteByReward_Reward_Id(int rewardId);
 }

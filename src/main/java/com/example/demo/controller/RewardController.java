@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,5 +39,11 @@ public class RewardController {
 	ResponseEntity<?> getUserRewards(@PathVariable long userId) {
 		List<UserRewardDto> result = rewardService.getUserRewards(userId);
 		return ResponseEntity.ok(result);
+	}
+	
+	@DeleteMapping("/{rewardId}")
+	ResponseEntity<?> deleteReward(@PathVariable int rewardId) {
+		rewardService.deleteReward(rewardId);
+		return ResponseEntity.noContent().build();
 	}
 }

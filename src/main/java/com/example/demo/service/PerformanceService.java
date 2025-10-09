@@ -106,12 +106,10 @@ public class PerformanceService {
 	
 	private Performance fromDto(PerformanceDto dto) {
 		User user = userRepository.findById(dto.getOrganizer()).orElse(null);
-		if (user == null) {
-			return null;
-		}
 		
 		Performance performance = new Performance();
 		performance.setPerformanceId(dto.getPerformanceId());
+		// organizer가 null인 경우는 해당 유저가 탈퇴한 경우이다.
 		performance.setOrganizer(user);
 		performance.setTitle(dto.getTitle());
 		performance.setSongList(dto.getSongList());
@@ -127,7 +125,7 @@ public class PerformanceService {
 		Performance performanceEntity = performanceRepository.findById(dto.getParticipantId()).orElse(null);
 		User userEntity = userRepository.findById(dto.getUserId()).orElse(null);
 		
-		if (performanceEntity == null || userEntity == null) {
+		if (performanceEntity == null) {
 			return null;
 		}
 		
@@ -135,6 +133,7 @@ public class PerformanceService {
 		entity.setParticipantId(dto.getParticipantId());
 		entity.setPerformance(performanceEntity);
 		entity.setPosition(dto.getPosition());
+		// user가 탈퇴한 경우 null일 수 있다.
 		entity.setUser(userEntity);
 		return entity;
 	}

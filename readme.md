@@ -6,6 +6,7 @@ Buskport web 서비스에서 사용할 api 서버
     - userId로 유저 정보 조회
 - /users/{userId} [DELETE]
     - userId로 유저 정보 삭제
+    - 해당 사용자가 작성한 게시글 및 획득한 모든 리워드 정보를 함께 삭제한다.
 - /users [POST]
     - 새로운 유저 추가
     - 매개변수

@@ -13,7 +13,7 @@ import com.example.demo.db.model.User;
 
 @Repository
 public interface PerformanceRepository extends JpaRepository<Performance, Long> {
-    // 특정 유저가 개설한 공연 목록 찾기 (예시)
+    // 특정 유저가 개설한 공연 목록 찾기
     List<Performance> findByOrganizer(User user);
     
     @Query("SELECT * FROM performances p where p.performanceDatetime > :startDate AND :endDate > p.performanceDatetime")

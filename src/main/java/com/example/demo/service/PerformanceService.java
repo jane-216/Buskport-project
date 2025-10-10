@@ -30,6 +30,9 @@ public class PerformanceService {
 	@Autowired
 	private PerformanceParticipantRepository performanceParticipantRepository;
 	
+	@Autowired
+	private RewardService rewardService;
+	
 	public PerformanceDto getPerformance(long performanceId) {
 		Performance performance = performanceRepository.findById(performanceId).orElse(null);
 		if (performance == null) {
@@ -66,6 +69,7 @@ public class PerformanceService {
 		originEntity.setSongList(performance.getSongList());
 		originEntity.setPerformanceDatetime(performance.getPerformanceDatetime());
 		originEntity.setPromoUrl(performance.getPromoUrl());
+		originEntity.setStatus(performance.getStatus());
 	}
 	
 	@Transactional
@@ -77,6 +81,10 @@ public class PerformanceService {
 	public void addParticipants(List<PerformanceParticipantDto> dtoes) {
 		List<PerformanceParticipant> entities = dtoes.stream().map(dto -> fromDto(dto)).toList();
 		performanceParticipantRepository.saveAll(entities);
+		
+		// user reward를 추가해준다.
+		dtoes.stream()
+		.forEach(dto -> rewardService.addUserPerformanceReward(dto.getUserId()));
 	}
 	
 	private PerformanceDto toDto(Performance performance) {

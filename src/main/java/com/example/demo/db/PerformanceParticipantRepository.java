@@ -13,12 +13,19 @@ import com.example.demo.db.model.PerformanceParticipant;
 @Repository
 public interface PerformanceParticipantRepository extends JpaRepository<PerformanceParticipant, Long> {
 	/**
-     * performanceId를 기준으로 해당 공연의 모든 참여자 목록을 조회합니다.
+     * performanceId를 기준으로 해당 공연의 모든 참여자 목록을 조회한다.
      */
     List<PerformanceParticipant> findByPerformance_PerformanceId(Long performanceId);
     
     /**
-     * performanceId를 기준으로 해당 공연의 모든 참여자 목록을 삭제합니다.
+     * performanceId를 기준으로 해당 공연의 모든 참여자 목록을 삭제한다.
      */
     long deleteByPerformance_PerformanceId(Long performanceId);
+    
+    /**
+     * 해당 사용자의 공연 참여 횟수를 조회한다.
+     * @param userId
+     * @return
+     */
+    int countByUser_UserId(long userId);
 }

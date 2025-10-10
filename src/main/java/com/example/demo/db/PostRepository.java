@@ -21,4 +21,13 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @return
      */
     int deleteByUser_UserId(Long userId);
+    
+    /**
+     * 해당 사용자가 작성한 모든 게시물의 갯수를 구한다.
+     * @param userId
+     * @return
+     */
+    int countByUser_UserId(Long userId);
+    
+    
 }

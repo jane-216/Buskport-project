@@ -23,6 +23,9 @@ public class PostService {
 	@Autowired
 	private UserRepository userRepository;
 	
+	@Autowired
+	private RewardService rewardService;
+	
 	public PostDto getPost(Long postId) {
 		Post entity = postRepository.findById(postId).orElse(null);
 		if (entity == null) {
@@ -34,6 +37,10 @@ public class PostService {
 	
 	public void addPost(PostDto postDto) {
 		Post entity = fromDto(postDto);
+		
+		// reward를 확인해보고 충족한 reward를 추가해준다.
+		rewardService.addUserPostReward(postDto.getUserId());
+		
 		postRepository.save(entity);
 	}
 	

@@ -79,7 +79,7 @@ public class UserController {
 	 * @param user
 	 * @return
 	 */
-	@PostMapping()
+	@PostMapping("/regist")
 	public ResponseEntity<?> postUsers(@RequestBody UserCreateRequestDto user) {
 		userService.addUser(user);
 		return ResponseEntity.accepted().build();

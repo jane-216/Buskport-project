@@ -12,11 +12,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.db.model.User;
+import com.example.demo.model.PostDto;
 import com.example.demo.model.UserCreateRequestDto;
 import com.example.demo.model.UserRewardDto;
+import com.example.demo.service.PostService;
 import com.example.demo.service.RewardService;
 import com.example.demo.service.UserService;
 
@@ -32,6 +35,9 @@ public class UserController {
 	
 	@Autowired
 	private RewardService rewardService;
+	
+	@Autowired
+	private PostService postService;
 	
 	/**
 	 * 내 정보 조회
@@ -99,6 +105,19 @@ public class UserController {
 	@GetMapping("/{userId}/rewards")
 	public ResponseEntity<?> getRewards(@PathVariable long userId) {
 		List<UserRewardDto> result = rewardService.getUserRewards(userId);
+		return ResponseEntity.ok(result);
+	}
+	
+	/**
+	 * 내가 작성한 게시글 조회
+	 * @param userId
+	 * @return
+	 */
+	@GetMapping("/me/posts")
+	ResponseEntity<?> getPostsByUserId(@AuthenticationPrincipal UserDetails userDetails) {
+		// TODO 페이징
+		long myId = Long.getLong(userDetails.getUsername());
+		List<PostDto> result = postService.getPostsByUserId(myId);
 		return ResponseEntity.ok(result);
 	}
 }

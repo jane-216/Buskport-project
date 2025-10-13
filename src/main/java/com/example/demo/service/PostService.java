@@ -26,6 +26,12 @@ public class PostService {
 	@Autowired
 	private RewardService rewardService;
 	
+	public List<PostDto> getPosts() {
+		// TODO 정렬, 페이징 등등
+		List<Post> posts = postRepository.findAll();
+		return posts.stream().map(post -> toDto(post)).toList();
+	}
+	
 	public PostDto getPost(Long postId) {
 		Post entity = postRepository.findById(postId).orElse(null);
 		if (entity == null) {

@@ -1,5 +1,7 @@
 package com.example.demo.controller.v1;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.db.model.User;
 import com.example.demo.model.UserCreateRequestDto;
+import com.example.demo.model.UserRewardDto;
+import com.example.demo.service.RewardService;
 import com.example.demo.service.UserService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +29,9 @@ public class UserController {
 	
 	@Autowired
 	private UserService userService;
+	
+	@Autowired
+	private RewardService rewardService;
 	
 	/**
 	 * 내 정보 조회
@@ -70,5 +77,28 @@ public class UserController {
 	public ResponseEntity<?> postUsers(@RequestBody UserCreateRequestDto user) {
 		userService.addUser(user);
 		return ResponseEntity.accepted().build();
+	}
+	
+	/**
+	 * 나의 업적 조회
+	 * @param userDetails
+	 * @return
+	 */
+	@GetMapping("/me/rewards")
+	public ResponseEntity<?> getRewards(@AuthenticationPrincipal UserDetails userDetails) {
+		long myId = Long.getLong(userDetails.getUsername());
+		List<UserRewardDto> result = rewardService.getUserRewards(myId);
+		return ResponseEntity.ok(result);
+	}
+	
+	/**
+	 * 타유저 업적 조회
+	 * @param userDetails
+	 * @return
+	 */
+	@GetMapping("/{userId}/rewards")
+	public ResponseEntity<?> getRewards(@PathVariable long userId) {
+		List<UserRewardDto> result = rewardService.getUserRewards(userId);
+		return ResponseEntity.ok(result);
 	}
 }

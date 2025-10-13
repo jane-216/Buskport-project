@@ -76,6 +76,8 @@ public class PerformanceDto {
 #### 리워드
 - /api/v1/users/me/rewards [GET]
   - 로그인한 유저의 획득 리워드 목록을 조회
+- /api/v1/users/{userId}/rewards [GET]
+  - 타유저의 획득 리워드 목록 조회
 ```
 // 유저가 획득한 리워드 객체
 public class UserRewardDto {

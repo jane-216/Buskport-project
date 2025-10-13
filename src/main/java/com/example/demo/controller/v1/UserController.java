@@ -1,7 +1,9 @@
-package com.example.demo.controller;
+package com.example.demo.controller.v1;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,29 +19,55 @@ import com.example.demo.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/v1/users")
 @Slf4j
 public class UserController {
 	
 	@Autowired
 	private UserService userService;
+	
+	/**
+	 * 내 정보 조회
+	 * @param userDetails
+	 * @return
+	 */
+	@GetMapping("/me")
+	public ResponseEntity<?> getMyUserInfo(@AuthenticationPrincipal UserDetails userDetails) {
+		long myId = Long.getLong(userDetails.getUsername());
+		User result = userService.getUser(myId);
+		return ResponseEntity.ok(result);
+	}
 
+	/**
+	 * 타회원 조회
+	 * @param userId
+	 * @return
+	 */
 	@GetMapping("/{userId}")
 	public ResponseEntity<?> getUsers(@PathVariable long userId) {
 		User result = userService.getUser(userId);
 		return ResponseEntity.ok(result);
 	}
 	
-	@DeleteMapping("/{userId}")
-	public ResponseEntity<?> deleteUser(@PathVariable long userId) {
-		userService.deleteUser(userId);
+	/**
+	 * 회원 탈퇴
+	 * @param userDetails
+	 * @return
+	 */
+	@DeleteMapping("/me")
+	public ResponseEntity<?> deleteUser(@AuthenticationPrincipal UserDetails userDetails) {
+		long myId = Long.getLong(userDetails.getUsername());
+		userService.deleteUser(myId);
 		return ResponseEntity.noContent().build();
 	}
 	
+	/**
+	 * 회원 가입
+	 * @param user
+	 * @return
+	 */
 	@PostMapping()
 	public ResponseEntity<?> postUsers(@RequestBody UserCreateRequestDto user) {
-		System.out.println("jmjr");
-		System.out.println(user);
 		userService.addUser(user);
 		return ResponseEntity.accepted().build();
 	}

@@ -19,4 +19,6 @@ public class UserCreateRequestDto {
  private String introduction;
  private String portfolioUrl;
  private String kakaotalkId;
+ private String loginId;
+ private String passward;
 }

@@ -7,6 +7,7 @@ import com.example.demo.db.PostRepository;
 import com.example.demo.db.UserRepository;
 import com.example.demo.db.UserRewardRepository;
 import com.example.demo.db.model.User;
+import com.example.demo.model.LoginRequest;
 import com.example.demo.model.UserCreateRequestDto;
 
 import jakarta.transaction.Transactional;
@@ -40,6 +41,8 @@ public class UserService {
 	    user.setIntroduction(requestDto.getIntroduction());
 	    user.setPortfolioUrl(requestDto.getPortfolioUrl());
 	    user.setKakaotalkId(requestDto.getKakaotalkId());
+	    user.setLoginId(requestDto.getLoginId());
+	    user.setPassword(requestDto.getPassward());
 	    
 		userRepository.save(user);
 	}
@@ -52,5 +55,14 @@ public class UserService {
 		userRewardRepository.deleteByUser_User_Id(userId);
 		
 		userRepository.deleteById(userId);
+	}
+	
+	public boolean login(LoginRequest loginRequest) {
+		User user = userRepository.findByLoginId(loginRequest.getUserId()).orElse(null);
+		if (user == null || !loginRequest.getPassward().equals(user.getPassword())) {
+			return false;
+		}
+		
+		return true;
 	}
 }

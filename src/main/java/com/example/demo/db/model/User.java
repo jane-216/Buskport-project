@@ -68,6 +68,12 @@ public class User {
     @UpdateTimestamp
     @Column(name="updated_at", updatable = false, insertable = false)
     private LocalDateTime updatedAt;
+    
+    @Column(name="login_id")
+    private String loginId;
+    
+    @Column(name="password")
+    private String password;
 
     @OneToMany(mappedBy = "organizer")
     private List<Performance> organizedPerformances;

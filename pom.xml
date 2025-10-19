@@ -26,7 +26,7 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
-    <!-- JSON 파싱용 -->
+    <!--  For JSON parsing -->
     <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>

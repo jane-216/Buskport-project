@@ -1,26 +1,45 @@
-Buskport web 서비스에서 사용할 api 서버
+<img width="609" height="765" alt="KakaoTalk_20251019_134702356" src="https://github.com/user-attachments/assets/94075660-7074-4cd8-847e-093bf02f3f4a" />
 
-### api 목록
-v1 버전
-#### 비고
-- 회원가입을 제외한 모든 api는 로그인 쿠키를 헤더에 넣어서 사용해야 동작함
-- me가 포함된 api는 로그인한 사용자의 정보로 동작하는 api이다.
+1. Spring Security Layer
+	- Handles user authentication, verifying whether incoming API requests are valid by checking the cookie included in the request header.
+		- If the request is invalid, a 403 Forbidden error is returned.
+		- Login and signup APIs are configured to operate without cookie-based authentication.
+
+2. Controller Layer
+	- Serves as the interface layer for APIs.
+		- Responsible for receiving API requests and returning responses to the client.
+
+3. Service Layer
+	- Contains the core business logic of the application.
+		- Handles functions such as user registration, performance reservations, and reward management, encapsulating the logic required for various services.
+
+4. Repository Layer
+	- Defines database entities and performs CRUD (Create, Read, Update, Delete) operations.
+
+5. JDBC Driver
+	- Utilizes the JDBC driver to enable communication and integration with MySQL.
+
+API Server for BuskPort Web Service
+
+### API List
+Version: v1
+#### Notes
+- All APIs require a login cookie to be included in the header, except for the signup endpoint.
+- APIs that include “me” operate based on the currently logged-in user’s information.
 
 #### users
 - /api/v1/users/me [GET]
-	- 로그인한 사용자의 정보 조회 
+	- Retrieves information of the logged-in user.
 - /api/v1/users/me [DELETE]
-    - 로그인한 사용자 탈퇴
-    - 해당 사용자가 작성한 게시글 및 획득한 모든 리워드 정보를 함께 삭제한다.
+    - Deletes the logged-in user’s account.
+    - All posts and rewards associated with that user are also deleted.
 - /api/v1/users/{userId} [GET]
-    - userId로 유저 정보 조회
+    - Retrieves information for a user by their userId.
 - /api/v1/users [POST]
-    - 새로운 유저 추가
-    - 로그인이 필요없음
-    - 매개변수
-      - user 객체를 json형태로 requestBody로 받음 
+    - Creates a new user (login not required).
+    - Parameters: Receives a user object in JSON format via requestBody.
 ```
-// user 객체
+// user object
 public class UserCreateRequestDto {
  private String socialProvider;
  private String socialId;
@@ -37,28 +56,26 @@ public class UserCreateRequestDto {
 }
 ```
 
-#### 공연
+#### Performances
 - /api/v1/performances [GET]
-    - 매개변수를 requestParam으로 받음
-      - startDate : 조회 구간 시작 날짜
-      - endDate : 조회 구간 끝 날짜
-    - 공연 목록 조회
+    - Retrieves a list of performances.
+	- Accepts parameters via requestParam:
+      - startDate : start date of the query range
+      - endDate : start date of the query range
 - /api/v1/performances/{performanceId} [GET]
-  - 공연 id로 공연 단건 조회
+  - Retrieves a single performance by its ID.
 - /api/v1/performances [POST]
-  - 공연 추가
-  - 매개변수
-    - 공연 객체를 json으로 requestBody로 받음
+  - Creates a new performance.
+  - Parameters: receives a performance object in JSON format via requestBody.
 - /api/v1/performances [PUT]
-  - 공연 정보를 수정함 (공연을 생성한 사용자만 사용 가능)
-  - 매개변수
-    - 공연 객체를 json으로 requestBody로 받음
+  - Updates an existing performance (only accessible by the creator).
+  - Parameters: receives a performance object in JSON format via requestBody.
 - /api/v1/performances/{performancesId} [DELETE]
-  - 공연 id로 공연 정보 삭제 (공연을 생성한 사용자만 사용 가능)
+  - Deletes a performance by its ID (only accessible by the creator).
 - /api/v1/performances/{performancedId}/participants [POST]
-  - 공연에 연주자 추가 
+  - Adds participants (performers) to a performance.
 ```
-// performance 객체
+// performance object
 public class PerformanceDto {
 	    private Long performanceId;
 	    private Long organizer;
@@ -73,13 +90,13 @@ public class PerformanceDto {
 }
 ```
 
-#### 리워드
+#### Rewards
 - /api/v1/users/me/rewards [GET]
-  - 로그인한 유저의 획득 리워드 목록을 조회
+  - Retrieves the list of rewards earned by the logged-in user.
 - /api/v1/users/{userId}/rewards [GET]
-  - 타유저의 획득 리워드 목록 조회
+  - Retrieves the list of rewards earned by another user.
 ```
-// 유저가 획득한 리워드 객체
+// User reward object
 public class UserRewardDto {
 	private Long userRewardId;
 	private Integer rewardId;
@@ -88,21 +105,20 @@ public class UserRewardDto {
 }
 ```
 
-#### 게시글
+#### Posts
 - /api/v1/posts/{postId} [GET]
-  - 게시글 id로 게시글 조회
+  - Retrieves a post by its ID.
 - /api/v1/posts [GET]
-  - 게시글 전체 조회 
+  - Retrieves all posts.
 - /api/v1/posts [POST]
-  - 새로운 게시글 등록
-  - 매개변수로 게시글 객체를 json으로 requestBody로 받음
+  - Creates a new post.
+  - Parameters: receives a post object in JSON format via requestBody.
 - /api/v1/posts/{postId} [DELETE]
-  - 게시글 id로 게시글 삭제
-  - 게시글 작성자만 삭제 가능
+  - Deletes a post by its ID (only accessible by the post’s author).
 - /api/v1/users/me/posts [GET]
-  - 매개변수로 전달한 user가 작성한 모든 게시글 목록 조회
+  - Retrieves all posts written by the logged-in user.
 ```
-// 게시글 객체
+// Post object
 public class PostDto {
 	private Long postId;
 	private Long userId;

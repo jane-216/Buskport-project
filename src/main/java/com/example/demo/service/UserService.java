@@ -49,9 +49,9 @@ public class UserService {
 	
 	@Transactional
 	public void deleteUser(long userId) {
-		// 사용자가 작성한 모든 게시글을 삭제한다.
+		// Deletes all posts created by the user.
 		postRepository.deleteByUser_UserId(userId);
-		// 사용자가 획득한 모든 reward 삭제한다.
+		// Deletes all rewards earned by the user.
 		userRewardRepository.deleteByUser_User_Id(userId);
 		
 		userRepository.deleteById(userId);

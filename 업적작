@@ -1,33 +1,65 @@
 import { db } from './db.js';
 
-/** @typedef {{
+/** ---------------------------------------------
+ * Types (JSDoc to keep JS runtime + strong hints)
+ * ----------------------------------------------*/
+
+/**
+ * @typedef {'Listing'|'Sales'|'Social'|'Onboarding'|'Streak'|string} AchievementCategory
+ */
+
+/**
+ * A normalized check result so downstream code never branches on boolean.
+ * `done` indicates unlock; `progress` and `target` are always numbers (>=0).
+ * @typedef {{ done: boolean; progress: number; target: number }} AchievementCheckResult
+ */
+
+/**
+ * @typedef {{
  *  id: string;
  *  key?: string;
  *  name: string;
  *  description: string;
  *  points: number;
  *  icon: string;
- *  category: 'Listing'|'Sales'|'Social'|'Onboarding'|'Streak'|string;
+ *  category: AchievementCategory;
  *  secret?: boolean;
  *  metric: string;
  *  threshold: number;
- *  check: (s: Record<string, number>) => true | {progress:number, target:number};
- * }} AchievementRule */
+ *  check: (s: Record<string, number>) => AchievementCheckResult;
+ * }} AchievementRule
+ */
 
-/** 공통 check 생성기 */
-function makeCheck(metric, threshold) {
-  return (s) => (Number(s?.[metric] ?? 0) >= threshold)
-    ? true
-    : { progress: Number(s?.[metric] ?? 0), target: threshold };
+/** ---------------------------------------------
+ * Utilities
+ * ----------------------------------------------*/
+
+/** Coerce to a non-negative number; returns 0 if NaN/negative/undefined. */
+function safeNumber(val) {
+  const n = Number(val);
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-/** rule 생성 헬퍼 (DRY) */
+/** Create a unified check that always returns {done, progress, target}. */
+function makeCheck(metric, threshold) {
+  const tgt = Math.max(0, Number(threshold) || 0);
+  return (s) => {
+    const cur = safeNumber(s?.[metric]);
+    return { done: cur >= tgt, progress: cur, target: tgt };
+  };
+}
+
+/**
+ * DRY rule factory with minimal validation; normalization happens later.
+ * Keeping the surface area small improves readability at call sites.
+ */
 function makeRule({
-  id, name, description, points, icon, category, metric, threshold, secret = false, key,
+  id, name, description, points, icon, category,
+  metric, threshold, secret = false, key,
 }) {
   return {
     id,
-    key: key ?? id, // id와 동일하면 key 생략 가능
+    key: key ?? id,
     name,
     description,
     points,
@@ -40,7 +72,10 @@ function makeRule({
   };
 }
 
-/** 규칙 정의 */
+/** ---------------------------------------------
+ * Rule Definitions
+ * ----------------------------------------------*/
+
 export const RULES = [
   makeRule({
     id: 'five_listings',
@@ -114,7 +149,66 @@ export const RULES = [
   }),
 ];
 
-/** 메타(뷰용)만 DB에 넣습니다. check/metric/threshold는 런타임에서 사용 */
+/** ---------------------------------------------
+ * Runtime Validation (fail fast on misconfig)
+ * ----------------------------------------------*/
+
+/** Throws if RULES contain duplicates or invalid fields. */
+function validateRules(rules) {
+  const ids = new Set();
+  for (const r of rules) {
+    if (!r.id || typeof r.id !== 'string') throw new Error('Rule.id is required (string).');
+    if (ids.has(r.id)) throw new Error(`Duplicate rule id: ${r.id}`);
+    ids.add(r.id);
+
+    if (!r.name) throw new Error(`Rule ${r.id}: name is required.`);
+    if (!r.description) throw new Error(`Rule ${r.id}: description is required.`);
+    if (typeof r.points !== 'number' || r.points < 0) {
+      throw new Error(`Rule ${r.id}: points must be a non-negative number.`);
+    }
+    if (!r.metric) throw new Error(`Rule ${r.id}: metric is required.`);
+    if (typeof r.threshold !== 'number' || r.threshold < 0) {
+      throw new Error(`Rule ${r.id}: threshold must be a non-negative number.`);
+    }
+    if (typeof r.check !== 'function') {
+      throw new Error(`Rule ${r.id}: check must be a function.`);
+    }
+  }
+}
+validateRules(RULES);
+
+/** ---------------------------------------------
+ * DB Layer: schema, indexes, upsert
+ * ----------------------------------------------*/
+
+/** Ensure base schema exists. Safe to call multiple times. */
+function ensureSchema() {
+  // Keep table schema minimal; business logic lives in app.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS achievements (
+      id TEXT PRIMARY KEY,
+      key TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      points INTEGER NOT NULL,
+      icon TEXT NOT NULL,
+      category TEXT NOT NULL,
+      secret INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+}
+
+/** Create indexes once; no-ops if already present. */
+function ensureIndexes() {
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_achievements_key ON achievements(key);
+    CREATE INDEX IF NOT EXISTS idx_achievements_category ON achievements(category);
+    -- Optional composite index if you often filter list views by category + secret.
+    CREATE INDEX IF NOT EXISTS idx_achievements_cat_secret ON achievements(category, secret);
+  `);
+}
+
+/** Insert or update only presentational metadata; runtime logic stays in code. */
 const UPSERT_SQL = `
 INSERT INTO achievements (id, key, name, description, points, icon, category, secret)
 VALUES (@id, @key, @name, @description, @points, @icon, @category, @secret)
@@ -128,45 +222,100 @@ ON CONFLICT(id) DO UPDATE SET
   secret=excluded.secret
 `;
 
-/** 인덱스 최적화: 최초 한 번만 생성(있으면 무시) */
-function ensureIndexes() {
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_achievements_key ON achievements(key);
-    CREATE INDEX IF NOT EXISTS idx_achievements_category ON achievements(category);
-  `);
-}
-
-/** Seed achievements (UPSERT + 트랜잭션 + 프리페어드) */
-export function seedAchievements() {
-  ensureIndexes();
-  const stmt = db.prepare(UPSERT_SQL);
-  const asRow = (r) => ({
+/** Convert a rule to a DB row, normalizing booleans to integers. */
+function toRow(r) {
+  return {
     id: r.id,
     key: r.key ?? r.id,
     name: r.name,
     description: r.description,
-    points: r.points,
+    points: Number(r.points) || 0,
     icon: r.icon,
     category: r.category,
     secret: r.secret ? 1 : 0,
-  });
-  const tx = db.transaction((rows) => {
-    for (const r of rows) stmt.run(asRow(r));
-  });
-  tx(RULES);
+  };
 }
 
-/** 유틸: 현재 상태에서 달성/진행도 계산 */
-export function evaluateAll(state) {
-  const unlocked = [];
-  const inProgress = [];
-  for (const r of RULES) {
-    const res = r.check(state);
-    if (res === true) {
-      unlocked.push({ id: r.id, points: r.points });
-    } else {
-      inProgress.push({ id: r.id, ...res, points: r.points });
-    }
+/** Public: seed/refresh achievement metadata safely and idempotently. */
+export function seedAchievements() {
+  ensureSchema();
+  ensureIndexes();
+
+  const stmt = db.prepare(UPSERT_SQL);
+  const tx = db.transaction((rows) => {
+    for (const r of rows) stmt.run(toRow(r));
+  });
+
+  try {
+    tx(RULES);
+  } catch (err) {
+    // Surface enough context for observability while avoiding PII.
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to seed achievements: ${message}`);
   }
+}
+
+/** ---------------------------------------------
+ * Evaluation API
+ * ----------------------------------------------*/
+
+/**
+ * Calculate unlocks and in-progress rules for a given state.
+ * @param {Record<string, number>} state - metrics map, e.g. { sales: 3, chats: 9 }
+ * @param {{withMeta?: boolean, includeLocked?: boolean, sortBy?: 'points'|'progressPct'|'category' }} [options]
+ */
+export function evaluateAll(state, options = {}) {
+  const { withMeta = false, includeLocked = true, sortBy = 'points' } = options;
+
+  /** Build a normalized view for each rule */
+  const rows = RULES.map((r) => {
+    const res = r.check(state);
+    const progress = Math.max(0, res.progress);
+    const target = Math.max(0, res.target);
+    const progressPct = target > 0 ? Math.min(1, progress / target) : res.done ? 1 : 0;
+
+    const base = {
+      id: r.id,
+      done: res.done,
+      progress,
+      target,
+      progressPct,
+      points: r.points,
+    };
+    return withMeta
+      ? { ...base, meta: { name: r.name, description: r.description, icon: r.icon, category: r.category, key: r.key ?? r.id, secret: !!r.secret } }
+      : base;
+  });
+
+  /** Optional filter */
+  const filtered = includeLocked ? rows : rows.filter((x) => x.done);
+
+  /** Optional sort */
+  const sorted = [...filtered].sort((a, b) => {
+    switch (sortBy) {
+      case 'progressPct': return b.progressPct - a.progressPct;
+      case 'category': {
+        const ca = withMeta ? a.meta.category : '';
+        const cb = withMeta ? b.meta.category : '';
+        return String(ca).localeCompare(String(cb));
+      }
+      case 'points':
+      default: return b.points - a.points;
+    }
+  });
+
+  /** Final shape for backward compatibility + richer data */
+  const unlocked = sorted
+    .filter((x) => x.done)
+    .map((x) => withMeta ? { id: x.id, points: x.points, meta: x.meta } : { id: x.id, points: x.points });
+
+  const inProgress = sorted
+    .filter((x) => !x.done)
+    .map((x) =>
+      withMeta
+        ? { id: x.id, progress: x.progress, target: x.target, progressPct: x.progressPct, points: x.points, meta: x.meta }
+        : { id: x.id, progress: x.progress, target: x.target, progressPct: x.progressPct, points: x.points }
+    );
+
   return { unlocked, inProgress };
 }

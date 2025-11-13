@@ -1,0 +1,3 @@
+kma:
+  ultra-srt-ncst-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtNcst?pageNo=1&numQfRows=1000&dataType=JSON&base_date=20251113&base_time=0700&nx=55&ny=127&authKey=""
+  auth-key: ""

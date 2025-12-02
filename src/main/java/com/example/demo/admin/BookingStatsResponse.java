@@ -1,4 +1,4 @@
-package com.example.demo.admin.dto;
+package com.example.demo.admin;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -59,7 +59,7 @@ public class UserService {
 	
 	public boolean login(LoginRequest loginRequest) {
 		User user = userRepository.findByLoginId(loginRequest.getUserId()).orElse(null);
-		if (user == null || !loginRequest.getPassward().equals(user.getPassword())) {
+		if (user == null || !loginRequest.getPassword().equals(user.getPassword())) {
 			return false;
 		}
 		

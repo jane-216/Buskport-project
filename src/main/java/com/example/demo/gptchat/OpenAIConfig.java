@@ -1,4 +1,4 @@
-package com.example.ai;
+package com.example.demo.gptchat;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;

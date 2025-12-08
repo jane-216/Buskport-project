@@ -1,6 +1,6 @@
-package com.buskport.weather.invoker;
+package com.example.demo.invokers;
 
-import com.buskport.weather.model.KmaUltraSrtNcstResponse;
+import com.example.invokers.model.KmaUltraSrtNcstResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;

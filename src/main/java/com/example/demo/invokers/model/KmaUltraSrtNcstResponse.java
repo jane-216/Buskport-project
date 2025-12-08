@@ -1,4 +1,4 @@
-package com.buskport.weather.model;
+package com.example.demo.invokers.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;

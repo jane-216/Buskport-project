@@ -1,7 +1,7 @@
-package com.buskport.weather.service;
+package com.example.demo.service;
 
-import com.buskport.weather.invoker.KmaWeatherInvoker;
-import com.buskport.weather.model.KmaUltraSrtNcstResponse;
+import com.example.demo.invokers.KmaWeatherInvoker;
+import com.example.demo.invokers.model.KmaUltraSrtNcstResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

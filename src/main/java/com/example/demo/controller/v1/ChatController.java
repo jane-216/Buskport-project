@@ -1,5 +1,5 @@
 
-package com.example.demo.gptchat;
+package com.example.demo.controller.v1;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;

@@ -1,21 +1,23 @@
 
 package com.example.demo.controller.v1;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import com.example.demo.service.gptchat.ChatService;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/chat")
 public class ChatController {
-  private final ChatService chatService;
 
-  public ChatController(ChatService chatService) {
-    this.chatService = chatService;
-  }
+  @Autowired
+  private ChatService chatService;
 
   /** JSON POST: { "query": "..." } -> { "answer": "..." } */
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -49,6 +51,16 @@ public class ChatController {
       }
     }).start();
     return emitter;
+  }
+
+  /**
+   * 오늘의 날씨와 날짜에 어울리는 노래 리스트를 제공
+   * @return
+   */
+  @GetMapping("/today-music")
+  public ResponseEntity<?> getTodaysMusic() {
+    List<String> songList = new ArrayList<>();
+    return ResponseEntity.ok(songList);
   }
 
   public static class QueryDto { public String query; }

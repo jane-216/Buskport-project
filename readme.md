@@ -1,13 +1,14 @@
 <img width="609" height="765" alt="KakaoTalk_20251019_134702356" src="https://github.com/user-attachments/assets/94075660-7074-4cd8-847e-093bf02f3f4a" />
 
-1. Spring Security Layer
-	- Handles user authentication, verifying whether incoming API requests are valid by checking the cookie included in the request header.
-		- If the request is invalid, a 403 Forbidden error is returned.
-		- Login and signup APIs are configured to operate without cookie-based authentication.
+1. Security Layer (Spring Security)
+	- Handles user authentication by validating incoming API requests.
+	- Authentication is performed by checking the login cookie included in the request header.
+	- If authentication fails, the server returns 403 Forbidden error.
+	- Signup APIs are configured to operate without cookie-based authentication.
 
 2. Controller Layer
-	- Serves as the interface layer for APIs.
-		- Responsible for receiving API requests and returning responses to the client.
+	- API interface layer.
+	- Receives HTTP requests and returns reponses to the client.
 
 3. Service Layer
 	- Contains the core business logic of the application.
